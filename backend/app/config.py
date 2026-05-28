@@ -1,8 +1,9 @@
-# project/app/config.py
+# project/backend/app/config.py
 
-import logging
 from functools import lru_cache
 from pydantic_settings import BaseSettings
+from pydantic import AnyUrl
+import logging
 import dotenv
 
 dotenv.load_dotenv()
@@ -13,7 +14,7 @@ class Settings(BaseSettings):
     app_name: str = "My App"
     environment: str = "dev"
     testing: bool = bool(0)
-    # database_url: str = "sqlite:///./test.db"
+    database_url: AnyUrl
     # secret_key: str = "your-secret-key"
 
 @lru_cache()
