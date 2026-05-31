@@ -79,6 +79,10 @@ logs:
 logs-test:
 	docker compose logs $(TEST)
 
+# Generate DB schemas manually via Tortoise (run after DB is live).
+generate-schemas:
+	docker compose exec $(WEB) python -m app.db
+
 # ============================================
 # Test Commands
 # ============================================

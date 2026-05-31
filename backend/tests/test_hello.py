@@ -4,7 +4,7 @@ from app import main
 
 # define test for /hello endpoint that uses our conftest fixture
 async def test_hello(async_client):
-    response = await async_client.get("/hello")
+    response = await async_client.get("/api/hello")
     assert response.status_code == 200
     data = response.json()
     assert data["hello"] == "world"
@@ -13,7 +13,7 @@ async def test_hello(async_client):
     assert data["testing"] == 1
     
 async def test_async_hello(async_client):
-    response = await async_client.get("/async_hello")
+    response = await async_client.get("/api/async_hello")
     assert response.status_code == 200
     data = response.json()
     assert data["hello"] == "world"
