@@ -12,6 +12,30 @@ DB=db
 TEST=test
 
 # ============================================
+# First-Time / Full Reset Workflows
+# ============================================
+
+# First-time setup from a clean state (no containers, no volumes).
+# Builds images, starts web + db in background, then applies migrations.
+setup:
+	docker compose up --build -d $(WEB) $(DB)
+	docker compose exec $(WEB) aerich upgrade
+
+# Wipe everything (containers, images, volumes) then run setup fresh.
+fresh:
+	docker compose down --rmi all --volumes --remove-orphans
+	$(MAKE) setup
+
+# Delete generated migration files and recreate from scratch.
+# Use this to replay the full aerich init-db flow from zero.
+# Steps: wipe everything → delete migrations → start → regenerate → apply.
+reset-migrations:
+	docker compose down --rmi all --volumes --remove-orphans
+	rm -rf backend/migrations
+	docker compose up --build -d $(WEB) $(DB)
+	docker compose exec $(WEB) aerich init-db
+
+# ============================================
 # Aerich Migration Commands
 # ============================================
 
@@ -89,6 +113,7 @@ generate-schemas:
 
 # Run full test suite with coverage report (default).
 test:
+	docker compose exec $(DB) psql -U postgres -c "CREATE DATABASE web_test" 2>/dev/null || true
 	docker compose run --rm $(TEST) python -m pytest --cov=app --cov-report=term-missing
 
 # Run tests with verbose output and coverage.
@@ -106,6 +131,30 @@ test-k:
 # Run tests and fail fast on first error.
 test-x:
 	docker compose run --rm $(TEST) python -m pytest -x -v --cov=app --cov-report=term-missing
+
+# Run only the tests that failed in the last run.
+test-lf:
+	docker compose run --rm $(TEST) python -m pytest --lf -v --cov=app --cov-report=term-missing
+
+# Enter PDB debugger on first failure (no coverage — meant for interactive debugging).
+test-pdb:
+	docker compose run --rm $(TEST) python -m pytest -x --pdb
+
+# Stop after N failures. Usage: make test-maxfail N=2
+test-maxfail:
+	docker compose run --rm $(TEST) python -m pytest --maxfail=$(N) -v --cov=app --cov-report=term-missing
+
+# Show local variables in tracebacks (useful for debugging assertion failures).
+test-l:
+	docker compose run --rm $(TEST) python -m pytest -l -v --cov=app --cov-report=term-missing
+
+# List the N slowest tests. Usage: make test-durations N=2
+test-durations:
+	docker compose run --rm $(TEST) python -m pytest --durations=$(N) --cov=app --cov-report=term-missing
+
+# Suppress pytest warnings (useful when third-party warnings clutter output).
+test-no-warn:
+	docker compose run --rm $(TEST) python -m pytest -p no:warnings --cov=app --cov-report=term-missing
 
 # Generate HTML coverage report (opens as htmlcov/index.html).
 test-cov-html:
@@ -153,8 +202,11 @@ lint:
 # Declare non-file targets so Make doesn't
 # confuse them with actual files on disk.
 # ============================================
-.PHONY: init init-db migrate upgrade downgrade history current \
+.PHONY: setup fresh reset-migrations \
+        init init-db migrate upgrade downgrade history current \
         up up-dev down clean restart logs logs-test \
-        test test-v test-file test-k test-x test-cov-html \
+        test test-v test-file test-k test-x \
+        test-lf test-pdb test-maxfail test-l test-durations test-no-warn \
+        test-cov-html \
         psql psql-dev psql-test reset-dev-db reset-test-db \
         format lint
