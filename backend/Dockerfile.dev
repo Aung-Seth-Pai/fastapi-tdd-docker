@@ -17,13 +17,7 @@ ENV PYTHONUNBUFFERED 1
 # copy project metadata
 COPY pyproject.toml uv.lock ./
 
-# ↓ replace the old RUN uv pip install line with these two lines
-ARG INSTALL_DEV=false
-RUN if [ "$INSTALL_DEV" = "true" ]; then \
-        uv pip install --no-cache --system ".[dev]"; \
-    else \
-        uv pip install --no-cache --system .; \
-    fi
+RUN uv pip install --no-cache --system ".[dev]"
  
 # Copy the rest of the app
 COPY . .
