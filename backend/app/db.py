@@ -8,9 +8,7 @@ from tortoise.contrib.fastapi import register_tortoise
 log = logging.getLogger("uvicorn")
 
 TORTOISE_ORM = {
-    "connections": {
-        "default": os.environ.get("DATABASE_URL")
-    },
+    "connections": {"default": os.environ.get("DATABASE_URL")},
     "apps": {
         "models": {
             "models": ["app.models", "aerich.models"],
@@ -18,6 +16,7 @@ TORTOISE_ORM = {
         },
     },
 }
+
 
 def init_db(app: FastAPI) -> None:
     register_tortoise(
@@ -27,7 +26,7 @@ def init_db(app: FastAPI) -> None:
         generate_schemas=False,
         add_exception_handlers=True,
     )
-    
+
 
 async def generate_schemas() -> None:
     log.info("Initializing Tortoise...")
@@ -38,6 +37,7 @@ async def generate_schemas() -> None:
     log.info("Generating schemas via Tortoise...")
     await Tortoise.generate_schemas()
     await Tortoise.close_connections()
-    
+
+
 if __name__ == "__main__":
     run_async(generate_schemas())

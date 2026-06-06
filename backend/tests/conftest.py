@@ -1,27 +1,24 @@
 # backend/tests/conftest.py
 
 import os
+
 import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 from tortoise import Tortoise
 
 from app import main
-from app.config import get_settings, Settings
+from app.config import Settings, get_settings
 from app.models.text_summary import TextSummary
 
 
 def get_settings_override():
-    return Settings(
-        testing=1,
-        database_url=os.environ.get("DATABASE_URL")
-    )
+    return Settings(testing=1, database_url=os.environ.get("DATABASE_URL"))
 
 
 @pytest_asyncio.fixture(loop_scope="function", scope="function")
 async def async_client():
     main.app.dependency_overrides[get_settings] = get_settings_override
-    async with AsyncClient(transport=ASGITransport(app=main.app),
-                           base_url="http://test") as ac:
+    async with AsyncClient(transport=ASGITransport(app=main.app), base_url="http://test") as ac:
         yield ac
     main.app.dependency_overrides.clear()
 
@@ -34,8 +31,7 @@ async def test_app_with_db():
     )
     await Tortoise.generate_schemas()
     main.app.dependency_overrides[get_settings] = get_settings_override
-    async with AsyncClient(transport=ASGITransport(app=main.app),
-                           base_url="http://test") as ac:
+    async with AsyncClient(transport=ASGITransport(app=main.app), base_url="http://test") as ac:
         yield ac
     await TextSummary.all().delete()
     await Tortoise.close_connections()

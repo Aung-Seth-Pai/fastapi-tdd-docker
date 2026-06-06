@@ -114,7 +114,7 @@ generate-schemas:
 # Run full test suite with coverage report (default).
 test:
 	docker compose exec $(DB) psql -U postgres -c "CREATE DATABASE web_test" 2>/dev/null || true
-	docker compose run --rm $(TEST) python -m pytest --cov=app --cov-report=term-missing
+	docker compose run --rm $(TEST) python -m pytest --cov=app --cov-branch --cov-report=term-missing
 
 # Run tests with verbose output and coverage.
 test-v:
@@ -190,13 +190,19 @@ reset-test-db:
 # Code Quality
 # ============================================
 
+# Lint code using Flake8.
+lint:
+	docker compose exec $(WEB) flake8 .
+
 # Format code using Black.
 format:
 	docker compose exec $(WEB) black .
 
-# Lint code using Flake8.
-lint:
-	docker compose exec $(WEB) flake8 .
+isort:
+	docker compose exec $(WEB) isort .
+
+isort-check:
+	docker compose exec $(WEB) isort . --check-only
 
 # ============================================
 # Declare non-file targets so Make doesn't
