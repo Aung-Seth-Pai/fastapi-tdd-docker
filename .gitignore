@@ -14,3 +14,8 @@ wheels/
 
 # others
 DEPLOYMENT.md
+
+# coverage
+.coverage
+.coverage.*
+htmlcov/
