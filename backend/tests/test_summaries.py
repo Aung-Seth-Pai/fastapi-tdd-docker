@@ -1,4 +1,3 @@
-
 async def test_create_summary(test_app_with_db):
     response = await test_app_with_db.post("api/summarize", json={"url": "https://www.example.com"})
     assert response.status_code == 201
