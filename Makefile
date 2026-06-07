@@ -12,7 +12,7 @@ DB=db
 TEST=test
 
 # Heroku app name — replace with your app name from `heroku create`
-HEROKU_APP=<limitless-ridge-16447>
+HEROKU_APP=limitless-ridge-16447
 HEROKU_REGISTRY_IMAGE=registry.heroku.com/$(HEROKU_APP)/web
 
 # ============================================

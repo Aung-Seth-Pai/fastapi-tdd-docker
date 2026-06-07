@@ -79,7 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, test]
     env:
-      HEROKU_APP_NAME: <limitless-ridge-16447>
+      HEROKU_APP_NAME: limitless-ridge-16447
       HEROKU_REGISTRY_IMAGE: registry.heroku.com/${HEROKU_APP_NAME}/web
 
     steps:
