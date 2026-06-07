@@ -11,6 +11,10 @@ DB=db
 # Name of the test service (from docker-compose.yml)
 TEST=test
 
+# Heroku app name — replace with your app name from `heroku create`
+HEROKU_APP=<limitless-ridge-16447>
+HEROKU_REGISTRY_IMAGE=registry.heroku.com/$(HEROKU_APP)/web
+
 # ============================================
 # First-Time / Full Reset Workflows
 # ============================================
@@ -205,6 +209,62 @@ isort-check:
 	docker compose exec $(WEB) isort . --check-only
 
 # ============================================
+# Heroku
+# ============================================
+
+# Log in to Heroku's container registry (one-time per machine session).
+heroku-login:
+	heroku container:login
+
+# Build the production image tagged for Heroku's registry.
+heroku-build:
+	docker build \
+	  --platform linux/amd64 \
+	  --provenance=false \
+	  -f backend/Dockerfile.prod \
+	  -t $(HEROKU_REGISTRY_IMAGE) \
+	  ./backend
+
+# Push the built image to Heroku's registry.
+heroku-push:
+	docker push $(HEROKU_REGISTRY_IMAGE)
+
+# Tell Heroku to activate the pushed image as the live release.
+heroku-release:
+	heroku container:release web --app $(HEROKU_APP)
+
+# Full deploy in one shot: build → push → release.
+heroku-deploy: heroku-build heroku-push heroku-release
+
+# Run pending Aerich migrations on the production database.
+heroku-migrate:
+	heroku run aerich upgrade --app $(HEROKU_APP)
+
+# Tail live logs from the production dyno.
+heroku-logs:
+	heroku logs --tail --app $(HEROKU_APP)
+
+# Open an interactive shell inside the running production container.
+heroku-shell:
+	heroku run bash --app $(HEROKU_APP)
+
+# Open a psql shell against the production Postgres database.
+heroku-psql:
+	heroku pg:psql --app $(HEROKU_APP)
+
+# Show all environment variables set on the Heroku app.
+heroku-config:
+	heroku config --app $(HEROKU_APP)
+
+# Show running dynos and their status.
+heroku-ps:
+	heroku ps --app $(HEROKU_APP)
+
+# Open the live app in a browser.
+heroku-open:
+	heroku open --app $(HEROKU_APP)
+
+# ============================================
 # Declare non-file targets so Make doesn't
 # confuse them with actual files on disk.
 # ============================================
@@ -215,4 +275,7 @@ isort-check:
         test-lf test-pdb test-maxfail test-l test-durations test-no-warn \
         test-cov-html \
         psql psql-dev psql-test reset-dev-db reset-test-db \
-        format lint
+        format lint \
+        heroku-login heroku-build heroku-push heroku-release heroku-deploy \
+        heroku-migrate heroku-logs heroku-shell heroku-psql \
+        heroku-config heroku-ps heroku-open

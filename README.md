@@ -1,6 +1,10 @@
 # FastAPI + TDD + Docker
 
+![Continuous Integration and Delivery](https://github.com/aung-seth-pai/fastapi-tdd-docker/workflows/Continuous%20Integration%20and%20Delivery/badge.svg?branch=main)
+
 A hands-on project built while learning FastAPI, TDD, and Docker mainly through the [testdriven.io](https://testdriven.io) course — adapted along the way to fit personal preferences and a more modern async-first stack. This is not a production service but kept as a reference for other projects.
+
+> For deployment instructions see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ---
 
@@ -16,6 +20,10 @@ A hands-on project built while learning FastAPI, TDD, and Docker mainly through 
 | Package manager | uv |
 | Testing | pytest + pytest-asyncio + httpx |
 | Config | pydantic-settings |
+| Code quality | Black + Flake8 + isort |
+| CI/CD | GitHub Actions |
+| Image registry | GitHub Container Registry (ghcr.io) |
+| Hosting | Heroku (container stack) |
 
 ---
 
@@ -25,25 +33,31 @@ A hands-on project built while learning FastAPI, TDD, and Docker mainly through 
 fastapi-app/
 ├── docker-compose.yml
 ├── Makefile
+├── DEPLOYMENT.md
 └── backend/
-    ├── Dockerfile
-    ├── pyproject.toml
+    ├── Dockerfile.dev       # dev image — installs all deps including dev tools
+    ├── Dockerfile.prod      # prod image — installs only runtime deps + gunicorn
+    ├── .flake8              # Flake8 config (max line length, excludes)
+    ├── pyproject.toml       # dependencies, Black/isort/pytest config
     ├── migrations/          # Aerich migration files
-    └── app/
-        ├── main.py          # FastAPI app + router registration
-        ├── config.py        # Settings (pydantic-settings + lru_cache)
-        ├── db.py            # Tortoise ORM config + Aerich TORTOISE_ORM dict
-        ├── api/
-        │   ├── summaries.py # REST endpoints
-        │   ├── crud.py      # DB operations
-        │   └── hello_router.py
-        ├── models/
-        │   ├── text_summary.py  # Tortoise model
-        │   └── pydantic.py      # Request/response schemas
-        └── tests/
-            ├── conftest.py      # pytest fixtures
-            ├── test_summaries.py
-            └── test_hello.py
+    ├── db/
+    │   └── init/
+    │       └── 01_create.sql  # creates web_dev and web_test DBs on first run
+    ├── app/
+    │   ├── main.py          # FastAPI app + router registration
+    │   ├── config.py        # Settings (pydantic-settings + lru_cache)
+    │   ├── db.py            # Tortoise ORM config + Aerich TORTOISE_ORM dict
+    │   ├── api/
+    │   │   ├── summaries.py # REST endpoints
+    │   │   ├── crud.py      # DB operations
+    │   │   └── hello_router.py
+    │   └── models/
+    │       ├── text_summary.py  # Tortoise model
+    │       └── pydantic.py      # Request/response schemas
+    └── tests/
+        ├── conftest.py      # pytest fixtures
+        ├── test_summaries.py
+        └── test_hello.py
 ```
 
 ---
@@ -141,6 +155,17 @@ make psql-dev           # connect to web_dev DB
 make psql-test          # connect to web_test DB
 make reset-test-db      # drop + recreate web_test (safe to run anytime)
 make reset-dev-db       # drop + recreate web_dev (destructive)
+```
+
+---
+
+## Code Quality
+
+```bash
+make format             # reformat code with Black
+make lint               # lint with Flake8
+make isort              # sort imports with isort
+make isort-check        # check import order without changing files
 ```
 
 ---
