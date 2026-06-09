@@ -20,21 +20,10 @@ async def test_create_summary_invalid_json(test_app_with_db):
         ]
     }
 
-
 async def test_create_summary_invalid_url(test_app_with_db):
-    response = await test_app_with_db.post("api/summarize", json={"url": "invalid_url"})
+    response = await test_app_with_db.post("api/summarize", json={"url": "invalid://url"})
     assert response.status_code == 422
-    assert response.json() == {
-        "detail": [
-            {
-                "input": "invalid_url",
-                "loc": ["body", "url"],
-                "msg": "Input should be a valid URL, relative URL without a base",
-                "type": "url_parsing",
-                "ctx": {"error": "relative URL without a base"},
-            }
-        ]
-    }
+    assert response.json()["detail"][0]["msg"] == "URL scheme should be 'http' or 'https'"
 
 
 async def test_read_summary(test_app_with_db):
@@ -55,6 +44,19 @@ async def test_read_summary_incorrect_id(test_app_with_db):
     response = await test_app_with_db.get("/api/summarize/9999")
     assert response.status_code == 404
     assert response.json() == {"detail": "Summary not found"}
+    
+    response = await test_app_with_db.get("/api/summarize/0")
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail":[
+            {
+                "type": "greater_than",
+                "loc": ["path", "summary_id"],
+                "msg": "Input should be greater than 0",
+                "input": "0",
+                "ctx": {"gt":0},                
+            }
+        ]}
 
 
 async def test_read_all_summaries(test_app_with_db):
@@ -82,6 +84,19 @@ async def test_remove_summary_incorrect_id(test_app_with_db):
     response = await test_app_with_db.delete("/api/summarize/9999")
     assert response.status_code == 404
     assert response.json() == {"detail": "Summary not found"}
+    
+    response = await test_app_with_db.delete("/api/summarize/0")
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail":[
+            {
+                "type": "greater_than",
+                "loc": ["path", "summary_id"],
+                "msg": "Input should be greater than 0",
+                "input": "0",
+                "ctx": {"gt":0},                
+            }
+        ]}
 
 
 async def test_update_summary(test_app_with_db):
@@ -106,6 +121,21 @@ async def test_update_summary_incorrect_id(test_app_with_db):
     )
     assert response.status_code == 404
     assert response.json() == {"detail": "Summary not found"}
+
+    response = await test_app_with_db.put(
+        "/api/summarize/0", json={"url": "https://www.foobar.com", "summary": "Updated summary"}
+    )
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail":[
+            {
+                "type": "greater_than",
+                "loc": ["path", "summary_id"],
+                "msg": "Input should be greater than 0",
+                "input": "0",
+                "ctx": {"gt":0},                
+            }
+        ]}
 
 
 async def test_update_summary_invalid_json(test_app_with_db):
@@ -137,3 +167,12 @@ async def test_update_summary_invalid_keys(test_app_with_db):
             }
         ]
     }
+
+    response = await test_app_with_db.put(
+        f"/api/summarize/{summary_id}", 
+        json={
+            "url": "invalid://url",
+            "summary": "Updated summary"
+            })
+    assert response.status_code == 422
+    assert response.json()["detail"][0]["msg"] == "URL scheme should be 'http' or 'https'"
