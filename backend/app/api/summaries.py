@@ -1,6 +1,6 @@
 # backend/app/api/summaries.py
 
-from fastapi import APIRouter, HTTPException, Path
+from fastapi import APIRouter, Body, HTTPException, Path
 
 from app.api import crud
 from app.models.pydantic import SummaryPayloadSchema, SummaryResponseSchema, SummaryUpdatePayloadSchema  # isort:skip
@@ -42,7 +42,7 @@ async def delete_summary(summary_id: int = Path(..., gt=0)) -> SummaryResponseSc
 
 
 @router.put("/summarize/{summary_id}", response_model=SummarySchema)
-async def update_summary(summary_id: int = Path(..., gt=0), payload: SummaryUpdatePayloadSchema = None) -> SummarySchema:
+async def update_summary(summary_id: int = Path(..., gt=0), payload: SummaryUpdatePayloadSchema = Body(...)) -> SummarySchema:
     updated_summary = await crud.put(summary_id, payload)
     if not updated_summary:
         raise HTTPException(status_code=404, detail="Summary not found")

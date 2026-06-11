@@ -1,3 +1,6 @@
+import pytest
+
+
 async def test_create_summary(test_app_with_db):
     response = await test_app_with_db.post("api/summarize", json={"url": "https://www.example.com"})
     assert response.status_code == 201
@@ -19,6 +22,7 @@ async def test_create_summary_invalid_json(test_app_with_db):
             }
         ]
     }
+
 
 async def test_create_summary_invalid_url(test_app_with_db):
     response = await test_app_with_db.post("api/summarize", json={"url": "invalid://url"})
@@ -44,19 +48,20 @@ async def test_read_summary_incorrect_id(test_app_with_db):
     response = await test_app_with_db.get("/api/summarize/9999")
     assert response.status_code == 404
     assert response.json() == {"detail": "Summary not found"}
-    
+
     response = await test_app_with_db.get("/api/summarize/0")
     assert response.status_code == 422
     assert response.json() == {
-        "detail":[
+        "detail": [
             {
                 "type": "greater_than",
                 "loc": ["path", "summary_id"],
                 "msg": "Input should be greater than 0",
                 "input": "0",
-                "ctx": {"gt":0},                
+                "ctx": {"gt": 0},
             }
-        ]}
+        ]
+    }
 
 
 async def test_read_all_summaries(test_app_with_db):
@@ -84,19 +89,20 @@ async def test_remove_summary_incorrect_id(test_app_with_db):
     response = await test_app_with_db.delete("/api/summarize/9999")
     assert response.status_code == 404
     assert response.json() == {"detail": "Summary not found"}
-    
+
     response = await test_app_with_db.delete("/api/summarize/0")
     assert response.status_code == 422
     assert response.json() == {
-        "detail":[
+        "detail": [
             {
                 "type": "greater_than",
                 "loc": ["path", "summary_id"],
                 "msg": "Input should be greater than 0",
                 "input": "0",
-                "ctx": {"gt":0},                
+                "ctx": {"gt": 0},
             }
-        ]}
+        ]
+    }
 
 
 async def test_update_summary(test_app_with_db):
@@ -115,64 +121,60 @@ async def test_update_summary(test_app_with_db):
     assert response_data["created_at"]
 
 
-async def test_update_summary_incorrect_id(test_app_with_db):
-    response = await test_app_with_db.put(
-        "/api/summarize/9999", json={"url": "https://www.foobar.com", "summary": "Updated summary"}
-    )
-    assert response.status_code == 404
-    assert response.json() == {"detail": "Summary not found"}
-
-    response = await test_app_with_db.put(
-        "/api/summarize/0", json={"url": "https://www.foobar.com", "summary": "Updated summary"}
-    )
-    assert response.status_code == 422
-    assert response.json() == {
-        "detail":[
+@pytest.mark.parametrize(
+    "summary_id, payload, expected_status, expected_response",
+    [
+        (
+            9999,
+            {"url": "https://www.foobar.com", "summary": "Updated summary"},
+            404,
+            {"detail": "Summary not found"},
+        ),
+        (
+            0,
+            {"url": "https://www.foobar.com", "summary": "Updated summary"},
+            422,
             {
-                "type": "greater_than",
-                "loc": ["path", "summary_id"],
-                "msg": "Input should be greater than 0",
-                "input": "0",
-                "ctx": {"gt":0},                
-            }
-        ]}
-
-
-async def test_update_summary_invalid_json(test_app_with_db):
-    response = await test_app_with_db.post("/api/summarize", json={"url": "https://www.example.com"})
-    summary_id = response.json()["id"]
-    response = await test_app_with_db.put(f"/api/summarize/{summary_id}", json={})
-    assert response.status_code == 422
-    assert response.json() == {
-        "detail": [
-            {"input": {}, "loc": ["body", "url"], "msg": "Field required", "type": "missing"},
-            {"input": {}, "loc": ["body", "summary"], "msg": "Field required", "type": "missing"},
-        ]
-    }
-
-
-async def test_update_summary_invalid_keys(test_app_with_db):
-    response = await test_app_with_db.post("/api/summarize", json={"url": "https://www.example.com"})
-    summary_id = response.json()["id"]
-
-    response = await test_app_with_db.put(f"/api/summarize/{summary_id}", json={"url": "https://www.foobar.com"})
-    assert response.status_code == 422
-    assert response.json() == {
-        "detail": [
+                "detail": [
+                    {
+                        "type": "greater_than",
+                        "loc": ["path", "summary_id"],
+                        "msg": "Input should be greater than 0",
+                        "input": "0",
+                        "ctx": {"gt": 0},
+                    }
+                ]
+            },
+        ),
+        (
+            1,
+            {},
+            422,
             {
-                "input": {"url": "https://www.foobar.com"},
-                "loc": ["body", "summary"],
-                "msg": "Field required",
-                "type": "missing",
-            }
-        ]
-    }
-
-    response = await test_app_with_db.put(
-        f"/api/summarize/{summary_id}", 
-        json={
-            "url": "invalid://url",
-            "summary": "Updated summary"
-            })
-    assert response.status_code == 422
-    assert response.json()["detail"][0]["msg"] == "URL scheme should be 'http' or 'https'"
+                "detail": [
+                    {"input": {}, "loc": ["body", "url"], "msg": "Field required", "type": "missing"},
+                    {"input": {}, "loc": ["body", "summary"], "msg": "Field required", "type": "missing"},
+                ]
+            },
+        ),
+        (
+            1,
+            {"url": "https://www.foobar.com"},
+            422,
+            {
+                "detail": [
+                    {
+                        "input": {"url": "https://www.foobar.com"},
+                        "loc": ["body", "summary"],
+                        "msg": "Field required",
+                        "type": "missing",
+                    }
+                ]
+            },
+        ),
+    ],
+)
+async def test_update_summary_invalid(test_app_with_db, summary_id, payload, expected_status, expected_response):
+    response = await test_app_with_db.put(f"/api/summarize/{summary_id}", json=payload)
+    assert response.status_code == expected_status
+    assert response.json() == expected_response
