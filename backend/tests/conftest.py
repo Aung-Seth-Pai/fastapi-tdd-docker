@@ -2,8 +2,10 @@
 
 import os
 
+import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from starlette.testclient import TestClient
 from tortoise import Tortoise
 
 from app import main
@@ -13,6 +15,14 @@ from app.models.text_summary import TextSummary
 
 def get_settings_override():
     return Settings(testing=1, database_url=os.environ.get("DATABASE_URL"))
+
+
+@pytest.fixture
+def test_app():
+    main.app.dependency_overrides[get_settings] = get_settings_override
+    with TestClient(main.app) as test_client:
+        yield test_client
+    main.app.dependency_overrides.clear()
 
 
 @pytest_asyncio.fixture(loop_scope="function", scope="function")
